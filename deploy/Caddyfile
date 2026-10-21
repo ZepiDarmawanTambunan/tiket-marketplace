@@ -1,0 +1,11 @@
+{$DOMAIN} {
+	# API backend (termasuk webhook Midtrans: /api/webhooks/midtrans)
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+
+	# Frontend Next.js
+	handle {
+		reverse_proxy web:3000
+	}
+}

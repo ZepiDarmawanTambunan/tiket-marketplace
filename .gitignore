@@ -1,0 +1,17 @@
+# Kredensial & secret lokal — JANGAN commit
+.db.env
+.env
+.env.local
+backend/.env
+web/.env.local
+
+# Build artifacts
+backend/tiket-api
+web/.next/
+web/out/
+web/node_modules/
+backend/vendor/
+
+# OS / editor
+.DS_Store
+*.swp

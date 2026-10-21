@@ -1,0 +1,25 @@
+# Override untuk menjalankan stack di laptop (testing/demo + Cloudflare Tunnel).
+# Service caddy (HTTPS produksi) sengaja TIDAK dijalankan di mode ini.
+#
+# Cara pakai — dari folder deploy/:
+#   cp .env.example .env   # lalu isi nilai aslinya
+#   docker compose -f docker-compose.yml -f docker-compose.laptop.yml up --build -d mysql api web
+#   docker compose -f docker-compose.yml -f docker-compose.laptop.yml exec api /app/migrate up
+#   docker compose -f docker-compose.yml -f docker-compose.laptop.yml exec api /app/seed
+#
+# Cek:  curl http://localhost:8080/health        -> {"data":{"status":"ok"}}
+#       buka http://localhost:3000 di browser
+
+services:
+  api:
+    ports:
+      - "8080:8080"
+    environment:
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+
+  web:
+    ports:
+      - "3000:3000"
+    environment:
+      # Di-bake saat build image; ubah di .env lalu `build web` bila perlu.
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}

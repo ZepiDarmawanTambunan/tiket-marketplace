@@ -1,0 +1,71 @@
+services:
+  mysql:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-tiket_db}
+      MYSQL_USER: ${DB_USER:-tiket}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?wajib diisi}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?wajib diisi}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      DB_DSN: ${DB_USER:-tiket}:${DB_PASSWORD:?wajib diisi}@tcp(mysql:3306)/${DB_NAME:-tiket_db}?parseTime=true
+      JWT_SECRET: ${JWT_SECRET:?wajib diisi}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-86400}
+      SETTINGS_MASTER_KEY: ${SETTINGS_MASTER_KEY:?wajib diisi}
+      QR_SECRET: ${QR_SECRET:?wajib diisi}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      CORS_ALLOWED_ORIGINS: https://${DOMAIN:?wajib diisi}
+      MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY:-DUMMY-SB-Mid-server-xxxxxxxxxxxxxxxx}
+      MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY:-DUMMY-SB-Mid-client-xxxxxxxxxxxxxxxx}
+    expose:
+      - "8080"
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_URL: https://${DOMAIN:?wajib diisi}/api
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      DOMAIN: ${DOMAIN:?wajib diisi}
+
+volumes:
+  mysql-data:
+  caddy-data:
+  caddy-config:
